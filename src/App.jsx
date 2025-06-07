@@ -15,7 +15,7 @@ import {
   Paper,
 } from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { Brightness4, Brightness7, Delete } from "@mui/icons-material";
+import { Brightness4, Brightness7 } from "@mui/icons-material";
 import { useTheme as useMuiTheme } from "@mui/material/styles";
 
 export default function App() {
@@ -65,7 +65,7 @@ export default function App() {
 
     const newItems = lines
       .filter((line) => !items.some((item) => item.text === line))
-      .map((line) => ({ text: line, checked: false }));
+      .map((line) => ({ text: line, status: "pending" }));
 
     setItems((prev) => [...prev, ...newItems]);
     setText("");
@@ -74,16 +74,24 @@ export default function App() {
   const toggleChecked = (index) => {
     setItems((prev) => {
       const updated = [...prev];
+      const currentStatus = updated[index].status;
       updated[index] = {
         ...updated[index],
-        checked: !updated[index].checked,
+        status: currentStatus === "win" ? "pending" : "win",
       };
       return updated;
     });
   };
 
-  const handleDelete = (index) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+  const handleLose = (index) => {
+    setItems((prev) => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        status: "lose",
+      };
+      return updated;
+    });
   };
 
   const handleClearAll = () => {
@@ -91,8 +99,8 @@ export default function App() {
   };
 
   const total = items.length;
-  const checkedCount = items.filter((item) => item.checked).length;
-  const winRate = total > 0 ? ((checkedCount / total) * 100).toFixed(0) : 0;
+  const winCount = items.filter((item) => item.status === "win").length;
+  const winRate = total > 0 ? ((winCount / total) * 100).toFixed(0) : 0;
 
   return (
     <ThemeProvider theme={theme}>
@@ -101,35 +109,47 @@ export default function App() {
         sx={{
           minHeight: "100vh",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 4,
+          flexDirection: "column",
+          p: isSmallScreen ? 2 : 4,
           backgroundColor: theme.palette.background.default,
-          fontSize: isSmallScreen ? "1.5rem" : "3rem"
         }}
       >
         <Box
           sx={{
-            width: "100%",
+            flex: "1 1 auto",
+            display: "flex",
+            flexDirection: "column",
             maxWidth: 800,
-            padding: 4,
+            width: "100%",
+            mx: "auto",
+            p: isSmallScreen ? 2 : 4,
             borderRadius: 4,
             backgroundColor: theme.palette.background.paper,
             boxShadow: darkMode ? 8 : 4,
             border: darkMode
               ? "1px solid rgba(255,255,255,0.1)"
               : "1px solid rgba(0,0,0,0.1)",
+            overflow: "hidden",
           }}
         >
-          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            spacing={2}
+          >
             <Typography variant="h3">Bet Builder Checklist</Typography>
-            <IconButton onClick={() => setDarkMode(!darkMode)} color="inherit">
+            <IconButton
+              onClick={() => setDarkMode(!darkMode)}
+              color="inherit"
+              aria-label="toggle dark mode"
+            >
               {darkMode ? <Brightness7 /> : <Brightness4 />}
             </IconButton>
           </Stack>
 
           <Typography variant="subtitle1" sx={{ mt: 1 }}>
-            Check your bets before placing them!
+            Did you hit your bet?
           </Typography>
 
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
@@ -137,7 +157,7 @@ export default function App() {
               label="Enter bets (one per line)"
               placeholder="e.g., LeBron to score 25+"
               multiline
-              rows={4}
+              rows={3}
               fullWidth
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -147,26 +167,41 @@ export default function App() {
               <Button type="submit" variant="contained" color="primary">
                 Submit Bet
               </Button>
-              <Button variant="outlined" color="secondary" onClick={handleClearAll}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={handleClearAll}
+              >
                 Clear All
               </Button>
             </Stack>
           </Box>
 
-          <Box sx={{ mt: 4 }}>
-            <Grid container spacing={2}>
+          <Box
+            sx={{
+              mt: 3,
+              flex: "1 1 auto",
+              overflowY: "auto",
+              maxHeight: isSmallScreen ? "40vh" : "auto",
+            }}
+          >
+            <Grid container spacing={1}>
               {items.map((item, index) => (
-                <Grid item xs={12} sm={6} key={index}>
+                <Grid item xs={12} key={index}>
                   <Paper
                     elevation={darkMode ? 0 : 1}
                     sx={{
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      padding: 1.5,
-                      backgroundColor: item.checked
-                        ? "rgba(0, 230, 118, 0.1)"
-                        : "inherit",
+                      py: 0.5,
+                      px: 1,
+                      backgroundColor:
+                        item.status === "win"
+                          ? "rgba(0, 230, 118, 0.1)"
+                          : item.status === "lose"
+                          ? "rgba(255, 23, 68, 0.1)"
+                          : "inherit",
                       transition: "background 0.3s",
                       "&:hover": {
                         backgroundColor: darkMode
@@ -178,24 +213,51 @@ export default function App() {
                     <FormControlLabel
                       control={
                         <Checkbox
-                          checked={item.checked}
+                          checked={item.status === "win"}
                           onChange={() => toggleChecked(index)}
+                          disabled={item.status === "lose"}
+                          sx={{ p: 0.5 }}
+                          inputProps={{
+                            "aria-label": `Mark bet "${item.text}" as won`,
+                          }}
                         />
                       }
                       label={
                         <Typography
                           sx={{
-                            textDecoration: item.checked ? "line-through" : "none",
-                            color: item.checked ? "gray" : "inherit",
+                            textDecoration:
+                              item.status !== "pending"
+                                ? "line-through"
+                                : "none",
+                            color:
+                              item.status === "win"
+                                ? "green"
+                                : item.status === "lose"
+                                ? "red"
+                                : "inherit",
+                            fontSize: "0.95rem",
                           }}
                         >
                           {item.text}
                         </Typography>
                       }
+                      sx={{
+                        m: 0,
+                        p: 0,
+                        flexGrow: 1,
+                      }}
                     />
-                    <IconButton onClick={() => handleDelete(index)} size="small">
-                      <Delete />
-                    </IconButton>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      onClick={() => handleLose(index)}
+                      disabled={item.status === "lose"}
+                      sx={{ minWidth: 64 }}
+                      aria-label={`Mark bet "${item.text}" as lost`}
+                    >
+                      Lose
+                    </Button>
                   </Paper>
                 </Grid>
               ))}
@@ -205,7 +267,7 @@ export default function App() {
           <Typography
             variant="h6"
             sx={{
-              mt: 4,
+              mt: 3,
               color: "#00e676",
               textAlign: "center",
               fontWeight: "bold",
@@ -215,9 +277,12 @@ export default function App() {
             Win Rate: {winRate}%
           </Typography>
 
-          {total > 0 && checkedCount === total && (
-            <Typography sx={{ color: "#00e676", mt: 2, textAlign: "center" }}>
-              ✅ All bets reviewed. Good luck!
+          {total > 0 && winCount === total && (
+            <Typography
+              sx={{ color: "#00e676", mt: 1, textAlign: "center" }}
+              aria-live="polite"
+            >
+              ✅ All bets won! Great job!
             </Typography>
           )}
         </Box>
