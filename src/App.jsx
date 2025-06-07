@@ -1,6 +1,5 @@
 import * as React from "react";
 import "@fontsource/roboto/400.css";
-import "@fontsource/orbitron/400.css";
 import {
   Typography,
   Box,
@@ -11,37 +10,51 @@ import {
   Stack,
   CssBaseline,
   IconButton,
+  useMediaQuery,
+  Grid,
+  Paper,
 } from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { Brightness4, Brightness7 } from "@mui/icons-material";
+import { Brightness4, Brightness7, Delete } from "@mui/icons-material";
+import { useTheme as useMuiTheme } from "@mui/material/styles";
 
 export default function App() {
   const [text, setText] = React.useState("");
-  const [items, setItems] = React.useState([]);
-  const [darkMode, setDarkMode] = React.useState(true); // Start with dark mode
+  const [items, setItems] = React.useState(() => {
+    const stored = localStorage.getItem("betItems");
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [darkMode, setDarkMode] = React.useState(true);
 
   const theme = createTheme({
     palette: {
       mode: darkMode ? "dark" : "light",
-      primary: {
-        main: "#00e676", // neon green
-      },
-      secondary: {
-        main: "#ff1744", // vibrant red
-      },
+      primary: { main: "#00e676" },
+      secondary: { main: "#ff1744" },
       background: {
         default: darkMode ? "#121212" : "#f4f4f4",
-        paper: darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)",
+        paper: darkMode ? "rgba(255,255,255,0.05)" : "#ffffff",
       },
     },
     typography: {
-      fontFamily: "'Orbitron', 'Roboto', sans-serif",
+      fontFamily: "'Roboto', sans-serif",
       h3: {
         fontWeight: 700,
         textTransform: "uppercase",
+        fontSize: "2rem",
+        "@media (min-width:900px)": {
+          fontSize: "3rem",
+        },
       },
     },
   });
+
+  const muiTheme = useMuiTheme();
+  const isSmallScreen = useMediaQuery(muiTheme.breakpoints.down("sm"));
+
+  React.useEffect(() => {
+    localStorage.setItem("betItems", JSON.stringify(items));
+  }, [items]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -69,6 +82,10 @@ export default function App() {
     });
   };
 
+  const handleDelete = (index) => {
+    setItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleClearAll = () => {
     setItems([]);
   };
@@ -81,70 +98,52 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
-        alignItems="center"
         sx={{
           minHeight: "100vh",
-          padding: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 4,
           backgroundColor: theme.palette.background.default,
-          color: theme.palette.text.primary,
+          fontSize: isSmallScreen ? "1.5rem" : "3rem"
         }}
       >
         <Box
           sx={{
-            width: { xs: "100%", sm: "500px" },
-            backgroundColor: theme.palette.background.paper,
-            borderRadius: 3,
+            width: "100%",
+            maxWidth: 800,
             padding: 4,
-            boxShadow: darkMode ? 8 : 3,
-            backdropFilter: "blur(5px)",
+            borderRadius: 4,
+            backgroundColor: theme.palette.background.paper,
+            boxShadow: darkMode ? 8 : 4,
             border: darkMode
               ? "1px solid rgba(255,255,255,0.1)"
               : "1px solid rgba(0,0,0,0.1)",
           }}
         >
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Typography variant="h3" textAlign="center" flexGrow={1}>
-              BetBuilder
-            </Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+            <Typography variant="h3">Bet Builder Checklist</Typography>
             <IconButton onClick={() => setDarkMode(!darkMode)} color="inherit">
               {darkMode ? <Brightness7 /> : <Brightness4 />}
             </IconButton>
-          </Box>
+          </Stack>
 
-          <Typography
-            variant="body1"
-            sx={{ marginTop: 1, textAlign: "center" }}
-          >
-            Check your bet!
+          <Typography variant="subtitle1" sx={{ mt: 1 }}>
+            Check your bets before placing them!
           </Typography>
 
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              marginTop: 2,
-            }}
-          >
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
             <TextField
-              placeholder="Enter your bet (one per line)"
-              required
+              label="Enter bets (one per line)"
+              placeholder="e.g., LeBron to score 25+"
               multiline
               rows={4}
+              fullWidth
               value={text}
               onChange={(e) => setText(e.target.value)}
+              required
             />
-
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} sx={{ mt: 2 }} flexWrap="wrap">
               <Button type="submit" variant="contained" color="primary">
                 Submit Bet
               </Button>
@@ -154,44 +153,73 @@ export default function App() {
             </Stack>
           </Box>
 
-          <Box sx={{ marginTop: 4 }}>
-            {items.map((item, index) => (
-              <FormControlLabel
-                key={index}
-                control={
-                  <Checkbox
-                    checked={item.checked}
-                    onChange={() => toggleChecked(index)}
-                  />
-                }
-                label={
-                  <span
-                    style={{
-                      textDecoration: item.checked ? "line-through" : "none",
-                      color: item.checked ? "gray" : "inherit",
+          <Box sx={{ mt: 4 }}>
+            <Grid container spacing={2}>
+              {items.map((item, index) => (
+                <Grid item xs={12} sm={6} key={index}>
+                  <Paper
+                    elevation={darkMode ? 0 : 1}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: 1.5,
+                      backgroundColor: item.checked
+                        ? "rgba(0, 230, 118, 0.1)"
+                        : "inherit",
+                      transition: "background 0.3s",
+                      "&:hover": {
+                        backgroundColor: darkMode
+                          ? "rgba(255,255,255,0.05)"
+                          : "rgba(0,0,0,0.04)",
+                      },
                     }}
                   >
-                    {item.text}
-                  </span>
-                }
-              />
-            ))}
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={item.checked}
+                          onChange={() => toggleChecked(index)}
+                        />
+                      }
+                      label={
+                        <Typography
+                          sx={{
+                            textDecoration: item.checked ? "line-through" : "none",
+                            color: item.checked ? "gray" : "inherit",
+                          }}
+                        >
+                          {item.text}
+                        </Typography>
+                      }
+                    />
+                    <IconButton onClick={() => handleDelete(index)} size="small">
+                      <Delete />
+                    </IconButton>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
           </Box>
 
           <Typography
             variant="h6"
             sx={{
-              marginTop: 3,
-              color: checkedCount > 0 ? "#00e676" : "gray",
-              textShadow:
-                checkedCount > 0
-                  ? "0 0 6px rgba(0, 230, 118, 0.7)"
-                  : "none",
+              mt: 4,
+              color: "#00e676",
               textAlign: "center",
+              fontWeight: "bold",
+              textShadow: "0 0 6px rgba(0, 230, 118, 0.7)",
             }}
           >
             Win Rate: {winRate}%
           </Typography>
+
+          {total > 0 && checkedCount === total && (
+            <Typography sx={{ color: "#00e676", mt: 2, textAlign: "center" }}>
+              ✅ All bets reviewed. Good luck!
+            </Typography>
+          )}
         </Box>
       </Box>
     </ThemeProvider>
