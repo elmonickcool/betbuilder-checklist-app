@@ -19,6 +19,7 @@ import { Brightness4, Brightness7 } from "@mui/icons-material";
 import { useTheme as useMuiTheme } from "@mui/material/styles";
 
 export default function App() {
+  const [gameName, setGameName] = React.useState("");
   const [text, setText] = React.useState("");
   const [items, setItems] = React.useState(() => {
     const stored = localStorage.getItem("betItems");
@@ -63,12 +64,23 @@ export default function App() {
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
 
+    if (!gameName.trim()) {
+      alert("Please enter a game name.");
+      return;
+    }
+
     const newItems = lines
-      .filter((line) => !items.some((item) => item.text === line))
-      .map((line) => ({ text: line, status: "pending" }));
+      .filter(
+        (line) =>
+          !items.some(
+            (item) => item.text === line && item.game === gameName.trim()
+          )
+      )
+      .map((line) => ({ game: gameName.trim(), text: line, status: "pending" }));
 
     setItems((prev) => [...prev, ...newItems]);
     setText("");
+    setGameName("");
   };
 
   const toggleChecked = (index) => {
@@ -83,13 +95,16 @@ export default function App() {
     });
   };
 
-  const handleLose = (index) => {
+  // Removed confirmation dialog from here
+  const toggleLose = (index) => {
     setItems((prev) => {
       const updated = [...prev];
-      updated[index] = {
-        ...updated[index],
-        status: "lose",
-      };
+      const currentStatus = updated[index].status;
+      if (currentStatus === "lose") {
+        updated[index] = { ...updated[index], status: "pending" };
+      } else {
+        updated[index] = { ...updated[index], status: "lose" };
+      }
       return updated;
     });
   };
@@ -154,6 +169,16 @@ export default function App() {
 
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
             <TextField
+              label="Game Name"
+              placeholder="e.g., OKC vs Indiana"
+              fullWidth
+              value={gameName}
+              onChange={(e) => setGameName(e.target.value)}
+              required
+              sx={{ mb: 2 }}
+            />
+
+            <TextField
               label="Enter bets (one per line)"
               placeholder="e.g., LeBron to score 25+"
               multiline
@@ -167,11 +192,7 @@ export default function App() {
               <Button type="submit" variant="contained" color="primary">
                 Submit Bet
               </Button>
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={handleClearAll}
-              >
+              <Button variant="outlined" color="secondary" onClick={handleClearAll}>
                 Clear All
               </Button>
             </Stack>
@@ -181,7 +202,6 @@ export default function App() {
             sx={{
               mt: 3,
               flex: "1 1 auto",
-              
             }}
           >
             <Grid container spacing={1}>
@@ -222,23 +242,34 @@ export default function App() {
                         />
                       }
                       label={
-                        <Typography
-                          sx={{
-                            textDecoration:
-                              item.status !== "pending"
-                                ? "line-through"
-                                : "none",
-                            color:
-                              item.status === "win"
-                                ? "green"
-                                : item.status === "lose"
-                                ? "red"
-                                : "inherit",
-                            fontSize: "0.95rem",
-                          }}
-                        >
-                          {item.text}
-                        </Typography>
+                        <Box>
+                          <Typography
+                            sx={{
+                              fontWeight: "bold",
+                              fontSize: "0.85rem",
+                              color: "text.secondary",
+                            }}
+                          >
+                            {item.game}
+                          </Typography>
+                          <Typography
+                            sx={{
+                              textDecoration:
+                                item.status !== "pending"
+                                  ? "line-through"
+                                  : "none",
+                              color:
+                                item.status === "win"
+                                  ? "green"
+                                  : item.status === "lose"
+                                  ? "red"
+                                  : "inherit",
+                              fontSize: "0.95rem",
+                            }}
+                          >
+                            {item.text}
+                          </Typography>
+                        </Box>
                       }
                       sx={{
                         m: 0,
@@ -248,14 +279,17 @@ export default function App() {
                     />
                     <Button
                       variant="outlined"
-                      color="error"
+                      color={item.status === "lose" ? "success" : "error"}
                       size="small"
-                      onClick={() => handleLose(index)}
-                      disabled={item.status === "lose"}
+                      onClick={() => toggleLose(index)}
                       sx={{ minWidth: 32 }}
-                      aria-label={`Mark bet "${item.text}" as lost`}
+                      aria-label={
+                        item.status === "lose"
+                          ? `Undo lost status for bet "${item.text}"`
+                          : `Mark bet "${item.text}" as lost`
+                      }
                     >
-                      Lose
+                      {item.status === "lose" ? "Undo" : "Lose"}
                     </Button>
                   </Paper>
                 </Grid>
