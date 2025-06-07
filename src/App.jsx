@@ -181,8 +181,7 @@ export default function App() {
             sx={{
               mt: 3,
               flex: "1 1 auto",
-              overflowY: "auto",
-              maxHeight: isSmallScreen ? "40vh" : "auto",
+              
             }}
           >
             <Grid container spacing={1}>
@@ -253,7 +252,7 @@ export default function App() {
                       size="small"
                       onClick={() => handleLose(index)}
                       disabled={item.status === "lose"}
-                      sx={{ minWidth: 64 }}
+                      sx={{ minWidth: 32 }}
                       aria-label={`Mark bet "${item.text}" as lost`}
                     >
                       Lose
