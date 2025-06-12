@@ -76,7 +76,11 @@ export default function App() {
             (item) => item.text === line && item.game === gameName.trim()
           )
       )
-      .map((line) => ({ game: gameName.trim(), text: line, status: "pending" }));
+      .map((line) => ({
+        game: gameName.trim(),
+        text: line,
+        status: "pending",
+      }));
 
     setItems((prev) => [...prev, ...newItems]);
     setText("");
@@ -182,7 +186,7 @@ export default function App() {
               label="Enter bets (one per line)"
               placeholder="e.g., LeBron to score 25+"
               multiline
-              rows={3}
+              rows={10}
               fullWidth
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -192,7 +196,11 @@ export default function App() {
               <Button type="submit" variant="contained" color="primary">
                 Submit Bet
               </Button>
-              <Button variant="outlined" color="secondary" onClick={handleClearAll}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={handleClearAll}
+              >
                 Clear All
               </Button>
             </Stack>
@@ -254,10 +262,10 @@ export default function App() {
                           </Typography>
                           <Typography
                             sx={{
+                              fontWeight:
+                                item.status === "lose" ? "bold" : "normal",
                               textDecoration:
-                                item.status !== "pending"
-                                  ? "line-through"
-                                  : "none",
+                                item.status === "win" ? "line-through" : "none",
                               color:
                                 item.status === "win"
                                   ? "green"
