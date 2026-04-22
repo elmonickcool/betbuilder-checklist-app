@@ -121,6 +121,12 @@ export default function App() {
   const winCount = items.filter((item) => item.status === "win").length;
   const winRate = total > 0 ? ((winCount / total) * 100).toFixed(0) : 0;
 
+  const groupedItems = items.reduce((acc, item) => {
+  if (!acc[item.game]) acc[item.game] = [];
+  acc[item.game].push(item);
+  return acc;
+}, {});
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -213,95 +219,91 @@ export default function App() {
             }}
           >
             <Grid container spacing={1}>
-              {items.map((item, index) => (
-                <Grid item xs={12} key={index}>
-                  <Paper
-                    elevation={darkMode ? 0 : 1}
+             {Object.entries(groupedItems).map(([game, bets]) => (
+  <Box key={game} sx={{ mb: 2 }}>
+    
+    {/* GAME HEADER */}
+    <Typography
+      sx={{
+        fontWeight: "bold",
+        fontSize: "1rem",
+        mb: 1,
+        color: "primary.main",
+      }}
+    >
+      {game}
+    </Typography>
+
+    <Grid container spacing={1}>
+      {bets.map((item, index) => {
+        const globalIndex = items.findIndex(
+          (i) => i === item
+        );
+
+        return (
+          <Grid item xs={12} key={globalIndex}>
+            <Paper
+              elevation={darkMode ? 0 : 1}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                py: 0.5,
+                px: 1,
+                backgroundColor:
+                  item.status === "win"
+                    ? "rgba(0, 230, 118, 0.1)"
+                    : item.status === "lose"
+                    ? "rgba(255, 23, 68, 0.1)"
+                    : "inherit",
+              }}
+            >
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={item.status === "win"}
+                    onChange={() => toggleChecked(globalIndex)}
+                    disabled={item.status === "lose"}
+                    sx={{ p: 0.5 }}
+                  />
+                }
+                label={
+                  <Typography
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      py: 0.5,
-                      px: 1,
-                      backgroundColor:
+                      textDecoration:
                         item.status === "win"
-                          ? "rgba(0, 230, 118, 0.1)"
+                          ? "line-through"
+                          : "none",
+                      color:
+                        item.status === "win"
+                          ? "green"
                           : item.status === "lose"
-                          ? "rgba(255, 23, 68, 0.1)"
+                          ? "red"
                           : "inherit",
-                      transition: "background 0.3s",
-                      "&:hover": {
-                        backgroundColor: darkMode
-                          ? "rgba(255,255,255,0.05)"
-                          : "rgba(0,0,0,0.04)",
-                      },
+                      fontSize: "0.95rem",
                     }}
                   >
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={item.status === "win"}
-                          onChange={() => toggleChecked(index)}
-                          disabled={item.status === "lose"}
-                          sx={{ p: 0.5 }}
-                          inputProps={{
-                            "aria-label": `Mark bet "${item.text}" as won`,
-                          }}
-                        />
-                      }
-                      label={
-                        <Box>
-                          <Typography
-                            sx={{
-                              fontWeight: "bold",
-                              fontSize: "0.85rem",
-                              color: "text.secondary",
-                            }}
-                          >
-                            {item.game}
-                          </Typography>
-                          <Typography
-                            sx={{
-                              fontWeight:
-                                item.status === "lose" ? "bold" : "normal",
-                              textDecoration:
-                                item.status === "win" ? "line-through" : "none",
-                              color:
-                                item.status === "win"
-                                  ? "green"
-                                  : item.status === "lose"
-                                  ? "red"
-                                  : "inherit",
-                              fontSize: "0.95rem",
-                            }}
-                          >
-                            {item.text}
-                          </Typography>
-                        </Box>
-                      }
-                      sx={{
-                        m: 0,
-                        p: 0,
-                        flexGrow: 1,
-                      }}
-                    />
-                    <Button
-                      variant="outlined"
-                      color={item.status === "lose" ? "success" : "error"}
-                      size="small"
-                      onClick={() => toggleLose(index)}
-                      sx={{ minWidth: 32 }}
-                      aria-label={
-                        item.status === "lose"
-                          ? `Undo lost status for bet "${item.text}"`
-                          : `Mark bet "${item.text}" as lost`
-                      }
-                    >
-                      {item.status === "lose" ? "Undo" : "Lose"}
-                    </Button>
-                  </Paper>
-                </Grid>
-              ))}
+                    {item.text}
+                  </Typography>
+                }
+                sx={{ m: 0, flexGrow: 1 }}
+              />
+
+              <Button
+                variant="outlined"
+                color={item.status === "lose" ? "success" : "error"}
+                size="small"
+                onClick={() => toggleLose(globalIndex)}
+              >
+                {item.status === "lose" ? "Undo" : "Lose"}
+              </Button>
+            </Paper>
+          </Grid>
+        );
+      })}
+    </Grid>
+  </Box>
+))}
             </Grid>
           </Box>
 
