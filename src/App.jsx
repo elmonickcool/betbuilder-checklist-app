@@ -7,7 +7,7 @@ function loadItems() {
   try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : []; }
   catch { return []; }
 }
-
+  
 function StatPill({ label, value, accent }) {
   return (
     <div className="stat-pill">
